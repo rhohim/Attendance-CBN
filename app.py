@@ -1,21 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file
 import pandas as pd
 import datetime
-import os
+import io
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'uploads'
-DOWNLOAD_FOLDER = 'downloads'
 ALLOWED_EXTENSIONS = {'xlsx'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -32,22 +22,23 @@ def upload_files():
     file1 = request.files['file1']
     file2 = request.files['file2']
 
-    if file1 and file2:
-        df = pd.read_excel(file1, header=1)
-        person = pd.read_excel(file2, header=1)
-        print(df)
-        print(person)
+    if file1 and allowed_file(file1.filename) and file2 and allowed_file(file2.filename):
+        # Read the files into DataFrames
+        df_file1 = pd.read_excel(file1, header=1)
+        df_file2 = pd.read_excel(file2, header=1)
+        
+        # Process the DataFrames
         df_final = pd.DataFrame(columns=['Name', 'Record date', 'Time in', 'Time out', 'Late Time'])
         date = datetime.date(1, 1, 1)
         check_in = datetime.time(8, 30, 0)
         check_out = datetime.time(18, 0, 0)
 
-        df_date = df['Record Date'].unique()
-        for i in range(len(person['First Name'])):
+        df_date = df_file1['Record Date'].unique()
+        for i in range(len(df_file2['First Name'])):
             for j in range(len(df_date)):
-                df_result = df[(df['First Name'] == person['First Name'][i]) & (df['Record Date'] == df_date[j])]
+                df_result = df_file1[(df_file1['First Name'] == df_file2['First Name'][i]) & (df_file1['Record Date'] == df_date[j])]
                 if df_result.empty:
-                    Name = person['First Name'][i]
+                    Name = df_file2['First Name'][i]
                     Date = df_date[j]
                     timein = ""
                     timeout = ""
@@ -65,7 +56,7 @@ def upload_files():
                         datetime2 = datetime.datetime.combine(date, person_in)
                         status = str(datetime2 - datetime1)
 
-                    Name = person['First Name'][i]
+                    Name = df_file2['First Name'][i]
                     Date = df_result['Record Date'].loc[df_result.index[0]]
                     timein = df_result['Earliest Time'].loc[df_result.index[0]]
                     timeout = df_result['Latest Time'].loc[df_result.index[0]]
@@ -73,25 +64,19 @@ def upload_files():
                 new_row = {'Name': Name, 'Record date': Date, 'Time in': timein, 'Time out': timeout, 'Late Time': status}
                 new_df = pd.DataFrame([new_row])
                 df_final = pd.concat([df_final, new_df], ignore_index=True)
-                print(df_final, "final")
 
-        output_file = os.path.join(app.config['DOWNLOAD_FOLDER'], 'Attendance-Cvox.csv')
+        # Save the final DataFrame to a CSV file in memory
+        output_file = io.StringIO()
         df_final.to_csv(output_file, encoding='utf-8-sig', index=False)
+        output_file.seek(0)
 
-        # Redirect to the download page with a query parameter
-        return redirect(url_for('download_file', filename='Attendance-Cvox.csv'))
-    print("out")
+        # Return the CSV file as an attachment
+        return send_file(io.BytesIO(output_file.getvalue().encode()), 
+                         download_name='Attendance-Cvox.csv', 
+                         as_attachment=True, 
+                         mimetype='text/csv')
+
     return redirect(request.url)
-
-@app.route('/download')
-def download_file():
-    filename = request.args.get('filename')
-    if not filename:
-        return redirect(url_for('home'))
-    output_file = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
-    if os.path.exists(output_file):
-        return send_file(output_file, as_attachment=True)
-    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
