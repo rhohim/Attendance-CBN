@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance-CBN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #666;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Excel Files</h1>
+        <form action="{{ url_for('upload_files') }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file1">Choose Daily Attendance File (xlsx format):</label>
+                <input type="file" name="file1" id="file1" required>
+                <p class="note">This file should contain daily attendance records. Please ensure it is in .xlsx format.</p>
+            </div>
+            <div class="form-group">
+                <label for="file2">Choose Database Employee File (xlsx format):</label>
+                <input type="file" name="file2" id="file2" required>
+                <p class="note">This file should contain the employee database. Please ensure it is in .xlsx format.</p>
+            </div>
+            <input type="submit" value="Upload Files">
+        </form>
+    </div>
+</body>
+</html>
